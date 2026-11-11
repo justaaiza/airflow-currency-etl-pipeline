@@ -1,0 +1,36 @@
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: airflow_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-airflow_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-airflow_local_password}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - airflow          # same network Astro puts the Airflow containers on
+
+  mongo-express:
+    image: mongo-express:1.0.2-20
+    container_name: airflow_mongo_express
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:-airflow_admin}:${MONGO_ROOT_PASSWORD:-airflow_local_password}@mongo:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_ENABLED: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    networks:
+      - airflow
+
+volumes:
+  mongo_data:
+
+networks:
+  airflow:
+    name: airflow_etl_network   # gives Astro's shared network a readable name
